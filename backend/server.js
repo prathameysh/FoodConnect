@@ -1,24 +1,27 @@
-const express = require("express")
-const mongoose = require("mongoose")
-const cors = require("cors")
-const bcrypt = require("bcryptjs")
-const jwt = require("jsonwebtoken")
-const app = express()
-const PORT = 5000
-const SECRET_KEY = "Rajesh@2004"
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const app = express();
+const PORT = 5000;
+const SECRET_KEY = "Rajesh@2004";
 
 // Middleware
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
 // MongoDB Connection
 mongoose
-  .connect("mongodb+srv://firstweb:GSQ9fjFvs6nsvKya@firstweb.9iplm.mongodb.net/FoodForGood", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://prathameshgavatre:abc123def@namastenode.5rc03jd.mongodb.net/FoodForGood",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log("MongoDB Connected"))
-  .catch((err) => console.log("MongoDB Connection Error:", err))
+  .catch((err) => console.log("MongoDB Connection Error:", err));
 
 // User Schema
 const UserSchema = new mongoose.Schema({
@@ -44,7 +47,7 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-})
+});
 
 // Donation Schema
 const DonationSchema = new mongoose.Schema({
@@ -90,34 +93,35 @@ const DonationSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-})
+});
 
-const User = mongoose.model("User", UserSchema)
-const Donation = mongoose.model("Donation", DonationSchema)
+const User = mongoose.model("User", UserSchema);
+const Donation = mongoose.model("Donation", DonationSchema);
 
 // Authentication Middleware
 const auth = (req, res, next) => {
-  const token = req.header("x-auth-token")
-  if (!token) return res.status(401).json({ msg: "No token, authorization denied" })
+  const token = req.header("x-auth-token");
+  if (!token)
+    return res.status(401).json({ msg: "No token, authorization denied" });
 
   try {
-    const decoded = jwt.verify(token, SECRET_KEY)
-    req.user = decoded
-    next()
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.user = decoded;
+    next();
   } catch (err) {
-    res.status(401).json({ msg: "Token is not valid" })
+    res.status(401).json({ msg: "Token is not valid" });
   }
-}
+};
 
 // Routes
 // Register User
 app.post("/api/users/register", async (req, res) => {
-  const { fullName, email, password, userType } = req.body
+  const { fullName, email, password, userType } = req.body;
 
   try {
-    let user = await User.findOne({ email })
+    let user = await User.findOne({ email });
     if (user) {
-      return res.status(400).json({ msg: "User already exists" })
+      return res.status(400).json({ msg: "User already exists" });
     }
 
     user = new User({
@@ -125,13 +129,13 @@ app.post("/api/users/register", async (req, res) => {
       email,
       password,
       userType,
-    })
+    });
 
     // Hash password
-    const salt = await bcrypt.genSalt(10)
-    user.password = await bcrypt.hash(password, salt)
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
 
-    await user.save()
+    await user.save();
 
     // Create JWT
     const payload = {
@@ -141,31 +145,31 @@ app.post("/api/users/register", async (req, res) => {
         fullName: user.fullName,
         userType: user.userType,
       },
-    }
+    };
 
     jwt.sign(payload, SECRET_KEY, { expiresIn: "5d" }, (err, token) => {
-      if (err) throw err
-      res.json({ token, user: payload.user })
-    })
+      if (err) throw err;
+      res.json({ token, user: payload.user });
+    });
   } catch (err) {
-    console.error(err.message)
-    res.status(500).send("Server error")
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
-})
+});
 
 // Login User
 app.post("/api/users/login", async (req, res) => {
-  const { email, password } = req.body
+  const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email })
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ msg: "Invalid Credentials" })
+      return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password)
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: "Invalid Credentials" })
+      return res.status(400).json({ msg: "Invalid Credentials" });
     }
 
     // Create JWT
@@ -176,27 +180,28 @@ app.post("/api/users/login", async (req, res) => {
         fullName: user.fullName,
         userType: user.userType,
       },
-    }
+    };
 
     jwt.sign(payload, SECRET_KEY, { expiresIn: "5d" }, (err, token) => {
-      if (err) throw err
-      res.json({ token, user: payload.user })
-    })
+      if (err) throw err;
+      res.json({ token, user: payload.user });
+    });
   } catch (err) {
-    console.error(err.message)
-    res.status(500).send("Server error")
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
-})
+});
 
 // Create Donation
 app.post("/api/donations", auth, async (req, res) => {
-  const { foodName, quantity, description, pickupAddress, expiryDate } = req.body
+  const { foodName, quantity, description, pickupAddress, expiryDate } =
+    req.body;
 
   try {
-    const user = await User.findById(req.user.user.id)
+    const user = await User.findById(req.user.user.id);
 
     if (user.userType !== "donor") {
-      return res.status(403).json({ msg: "Only donors can create donations" })
+      return res.status(403).json({ msg: "Only donors can create donations" });
     }
 
     const newDonation = new Donation({
@@ -208,56 +213,63 @@ app.post("/api/donations", auth, async (req, res) => {
       description,
       pickupAddress,
       expiryDate,
-    })
+    });
 
-    const donation = await newDonation.save()
-    res.json(donation)
+    const donation = await newDonation.save();
+    res.json(donation);
   } catch (err) {
-    console.error(err.message)
-    res.status(500).send("Server error")
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
-})
+});
 
 // Get All Donations (for NGOs)
 app.get("/api/donations", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.user.id)
+    const user = await User.findById(req.user.user.id);
 
     if (user.userType === "ngo") {
-      const donations = await Donation.find().sort({ createdAt: -1 })
-      return res.json(donations)
+      const donations = await Donation.find().sort({ createdAt: -1 });
+      return res.json(donations);
     } else {
-      const donations = await Donation.find({ donorId: req.user.user.id }).sort({ createdAt: -1 })
-      return res.json(donations)
+      const donations = await Donation.find({ donorId: req.user.user.id }).sort(
+        { createdAt: -1 }
+      );
+      return res.json(donations);
     }
   } catch (err) {
-    console.error(err.message)
-    res.status(500).send("Server error")
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
-})
+});
 
 // Update Donation Status
 app.put("/api/donations/:id", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.user.id)
+    const user = await User.findById(req.user.user.id);
 
     if (user.userType !== "ngo") {
-      return res.status(403).json({ msg: "Only NGOs can update donation status" })
+      return res
+        .status(403)
+        .json({ msg: "Only NGOs can update donation status" });
     }
 
-    const donation = await Donation.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true })
+    const donation = await Donation.findByIdAndUpdate(
+      req.params.id,
+      { status: req.body.status },
+      { new: true }
+    );
 
     if (!donation) {
-      return res.status(404).json({ msg: "Donation not found" })
+      return res.status(404).json({ msg: "Donation not found" });
     }
 
-    res.json(donation)
+    res.json(donation);
   } catch (err) {
-    console.error(err.message)
-    res.status(500).send("Server error")
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
-})
+});
 
 // Start server
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
-
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
